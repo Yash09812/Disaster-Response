@@ -196,3 +196,20 @@ function getColor(priority) {
 function hookUpUI() {
   // Language selector and other dynamic UI features can go here
 }
+function getUserLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        document.getElementById("sosLat").value = position.coords.latitude.toFixed(6);
+        document.getElementById("sosLng").value = position.coords.longitude.toFixed(6);
+        alert("📍 Location detected and filled automatically!");
+      },
+      (error) => {
+        alert("❌ Unable to retrieve location. Please enter it manually.");
+        console.error(error);
+      }
+    );
+  } else {
+    alert("Geolocation is not supported by this browser.");
+  }
+}
