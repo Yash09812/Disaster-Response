@@ -5,12 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="title">ResQNet – Emergency Command Center</title>
 
-  <!-- TailwindCSS -->
+ 
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Leaflet -->
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+  function startVoiceInput() {
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("Speech recognition not supported in this browser.");
+      return;
+    }
+
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = "en-IN"; 
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      showToast("🎙️ Listening...", "Medium");
+    };
+
+    recognition.onerror = (event) => {
+      alert("Speech recognition error: " + event.error);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      document.getElementById("sosMessage").value = transcript;
+      const priority = detectPriority(transcript);
+      document.getElementById("sosPriority").value = priority;
+      showToast("📝 Transcribed message added", "Low");
+    };
+
+    recognition.start();
+  }
+</script>
+
 
   <style>
     .custom-div-icon div {
@@ -24,7 +59,7 @@
 </head>
 <body class="bg-gray-50 text-gray-900">
 
-  <!-- HEADER -->
+  
   <header class="flex justify-between items-center px-6 py-4 border-b">
     <div class="flex items-center space-x-3">
       <img src="resqnet.png" alt="Logo" class="h-10 w-10">
@@ -44,13 +79,10 @@
         <option value="gu">ગુજરાતી</option>
         <option value="mr">मराठी</option>
       </select>
-      <button class="bg-orange-600 text-white px-4 py-2 rounded text-sm hover:bg-orange-700" data-i18n="login">
-        <a href="login.html">Log In</a>
-      </button>
     </div>
   </header>
 
-  <!-- HERO -->
+ 
   <section class="bg-orange-600 text-white py-6 text-center">
     <h1 class="text-3xl font-bold mb-1" data-i18n="heroTitle">Emergency Command Center</h1>
     <p class="text-sm" data-i18n="heroSub">Live disaster coordination system with situational awareness</p>
@@ -70,13 +102,12 @@
     </div>
   </section>
 
-  <!-- MAIN -->
+ 
   <main class="px-6 py-10 max-w-7xl mx-auto">
     <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
       <h2 class="text-xl font-semibold" data-i18n="sectionMap">Situational Awareness Map</h2>
       <div class="flex flex-wrap items-center gap-3">
         <button id="refreshBtn" class="text-sm border px-4 py-2 rounded hover:bg-gray-100" data-i18n="refresh">Refresh</button>
-        <button class="text-sm border px-4 py-2 rounded hover:bg-gray-100" data-i18n="comms">Comms</button>
         <button id="newSosBtn" class="new-sos-btn bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded text-sm" data-i18n="newSOS">➕ New SOS</button>
         <select id="filterSelect" class="text-sm border rounded px-3 py-2">
           <option value="All" selected data-i18n="filterAll">All</option>
@@ -87,11 +118,13 @@
       </div>
     </div>
 
-    <!-- MAP -->
+   
     <div id="map" class="w-full rounded-lg shadow border"></div>
+
+  
+    <canvas id="priorityChart" class="mx-auto mt-10 max-w-xs"></canvas>
   </main>
 
-  <!-- FOOTER -->
   <footer class="bg-white border-t mt-10">
     <div class="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-8 text-sm text-gray-600">
       <div>
@@ -118,20 +151,27 @@
     </div>
   </footer>
 
-  <!-- ░░░ MODAL ░░░ -->
+ 
   <div id="sosModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
     <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
       <h2 class="text-xl font-semibold mb-4">New SOS Request</h2>
       <form id="sosForm" class="space-y-4">
         <input id="sosName" required type="text" placeholder="Name" class="w-full border rounded p-2">
-        <textarea id="sosMessage" required placeholder="Describe the situation" class="w-full border rounded p-2"></textarea>
+       <div class="relative">
+  <textarea id="sosMessage" required placeholder="Describe the situation" class="w-full border rounded p-2 pr-10"></textarea>
+  <button type="button" onclick="startVoiceInput()" class="absolute right-2 top-2 text-gray-600 hover:text-orange-600" title="Voice Input">
+    🎤
+  </button>
+</div>
+
         <input id="sosLat" required type="number" step="any" placeholder="Latitude" class="w-full border rounded p-2">
         <input id="sosLng" required type="number" step="any" placeholder="Longitude" class="w-full border rounded p-2">
         <button type="button" onclick="getUserLocation()" class="bg-blue-500 text-white px-3 py-2 rounded text-sm">
-  Use My Location
-</button>
-
+          Use My Location
+        </button>
         <input id="sosPriority" readonly placeholder="Priority will be auto-detected" class="w-full border rounded p-2 bg-gray-100 text-gray-700">
+        <input id="sosRecommendation" readonly placeholder="Recommended resources" class="w-full border rounded p-2 bg-gray-100 text-gray-700">
+
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" onclick="closeSOSModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
           <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded">Submit</button>
@@ -140,39 +180,37 @@
     </div>
   </div>
 
-  <!-- SCRIPTS -->
+  
   <script src="app.js"></script>
   <script src="translations.js"></script>
-<script>
-  const languageSelect = document.getElementById("languageSelect");
+  <script>
+    const languageSelect = document.getElementById("languageSelect");
 
-  function applyTranslations(lang) {
-    const elements = document.querySelectorAll("[data-i18n]");
-    elements.forEach((el) => {
-      const key = el.getAttribute("data-i18n");
-      if (translations[lang] && translations[lang][key]) {
-        el.textContent = translations[lang][key];
+    function applyTranslations(lang) {
+      const elements = document.querySelectorAll("[data-i18n]");
+      elements.forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (translations[lang] && translations[lang][key]) {
+          el.textContent = translations[lang][key];
+        }
+      });
+      if (translations[lang]?.title) {
+        document.title = translations[lang].title;
       }
-    });
-    // Change title too
-    if (translations[lang]?.title) {
-      document.title = translations[lang].title;
     }
-  }
 
-  languageSelect.addEventListener("change", (e) => {
-    const selectedLang = e.target.value;
-    applyTranslations(selectedLang);
-    localStorage.setItem("lang", selectedLang);
-  });
+    languageSelect.addEventListener("change", (e) => {
+      const selectedLang = e.target.value;
+      applyTranslations(selectedLang);
+      localStorage.setItem("lang", selectedLang);
+    });
 
-  // Load saved language
-  document.addEventListener("DOMContentLoaded", () => {
-    const savedLang = localStorage.getItem("lang") || "en";
-    languageSelect.value = savedLang;
-    applyTranslations(savedLang);
-  });
-</script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedLang = localStorage.getItem("lang") || "en";
+      languageSelect.value = savedLang;
+      applyTranslations(savedLang);
+    });
+  </script>
 
 </body>
 </html>
