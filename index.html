@@ -127,6 +127,10 @@
         <textarea id="sosMessage" required placeholder="Describe the situation" class="w-full border rounded p-2"></textarea>
         <input id="sosLat" required type="number" step="any" placeholder="Latitude" class="w-full border rounded p-2">
         <input id="sosLng" required type="number" step="any" placeholder="Longitude" class="w-full border rounded p-2">
+        <button type="button" onclick="getUserLocation()" class="bg-blue-500 text-white px-3 py-2 rounded text-sm">
+  Use My Location
+</button>
+
         <input id="sosPriority" readonly placeholder="Priority will be auto-detected" class="w-full border rounded p-2 bg-gray-100 text-gray-700">
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" onclick="closeSOSModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
@@ -138,5 +142,37 @@
 
   <!-- SCRIPTS -->
   <script src="app.js"></script>
+  <script src="translations.js"></script>
+<script>
+  const languageSelect = document.getElementById("languageSelect");
+
+  function applyTranslations(lang) {
+    const elements = document.querySelectorAll("[data-i18n]");
+    elements.forEach((el) => {
+      const key = el.getAttribute("data-i18n");
+      if (translations[lang] && translations[lang][key]) {
+        el.textContent = translations[lang][key];
+      }
+    });
+    // Change title too
+    if (translations[lang]?.title) {
+      document.title = translations[lang].title;
+    }
+  }
+
+  languageSelect.addEventListener("change", (e) => {
+    const selectedLang = e.target.value;
+    applyTranslations(selectedLang);
+    localStorage.setItem("lang", selectedLang);
+  });
+
+  // Load saved language
+  document.addEventListener("DOMContentLoaded", () => {
+    const savedLang = localStorage.getItem("lang") || "en";
+    languageSelect.value = savedLang;
+    applyTranslations(savedLang);
+  });
+</script>
+
 </body>
 </html>
