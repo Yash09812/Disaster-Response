@@ -8,7 +8,7 @@
 </head>
 <body class="bg-gray-100 text-gray-900">
 
-  <!-- Header -->
+
   <header class="flex justify-between items-center px-6 py-4 bg-white shadow">
     <div class="flex items-center space-x-3">
       <img src="resqnet.png" alt="Logo" class="h-10 w-10">
@@ -22,17 +22,22 @@
     </nav>
   </header>
 
-  <!-- Title -->
+ 
   <section class="bg-orange-600 text-white py-6 text-center">
     <h1 class="text-3xl font-bold">Incident Reports</h1>
-    <p class="text-sm mt-1">Latest updates from the ground</p>
+    <p class="text-sm mt-1">Latest updates from ground operations & AI insights</p>
   </section>
 
-  <!-- Main Content -->
-  <main class="px-6 py-8 max-w-6xl mx-auto bg-white rounded-lg shadow">
-    <div class="flex justify-end gap-4 mb-4">
-      <button onclick="exportTableToCSV()" class="text-sm bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Download CSV</button>
-      <button onclick="window.print()" class="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Print</button>
+ 
+  <main class="px-6 py-8 max-w-7xl mx-auto bg-white rounded-lg shadow">
+    <div class="flex justify-between flex-wrap gap-4 mb-4">
+      <div>
+        <p class="text-sm text-gray-600">Showing auto + manual SOS responses</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="exportTableToCSV()" class="text-sm bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Download CSV</button>
+        <button onclick="window.print()" class="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Print</button>
+      </div>
     </div>
     <div class="overflow-x-auto">
       <table id="reportTable" class="w-full table-auto text-sm">
@@ -43,45 +48,82 @@
             <th class="px-4 py-2">Location</th>
             <th class="px-4 py-2">Message</th>
             <th class="px-4 py-2">Priority</th>
+            <th class="px-4 py-2">AI Insight</th>
+            <th class="px-4 py-2">Suggested Resources</th>
           </tr>
         </thead>
         <tbody id="reportBody" class="divide-y">
-          <!-- Reports will be loaded via JS -->
+        
         </tbody>
       </table>
     </div>
   </main>
 
-  <!-- Footer -->
+
   <footer class="text-sm text-center text-gray-400 py-6">
-    © 2025 ResQNet | Report status auto-synced from active SOS entries
+    © 2025 ResQNet | Reports auto-generated every 45 seconds
   </footer>
 
   <script>
     const reportBody = document.getElementById('reportBody');
-    const sosData = JSON.parse(localStorage.getItem("sosData")) || [];
 
-    sosData.forEach((sos, index) => {
-      const row = document.createElement('tr');
-      row.classList.add('hover:bg-gray-50');
+    const fakeAIResponses = [
+      "This situation appears to be critical. Please deploy emergency services immediately.",
+      "It looks like the issue is of medium severity. Suggest monitoring and sending volunteers if needed.",
+      "This seems to be a low-priority case, but still keep an eye on it.",
+      "Urgent medical aid is required based on the message content.",
+      "Recommend contacting nearby resources for quick resolution.",
+      "This message indicates risk to human life – prioritize immediately."
+    ];
 
-      const date = new Date().toLocaleString(); // Real-time timestamp
-      const priorityColor = sos.priority === 'High'
-        ? 'bg-red-600'
-        : sos.priority === 'Medium'
-        ? 'bg-orange-500'
-        : 'bg-green-600';
+    const resourceMap = [
+      { keywords: ["injury", "injured", "bleeding", "accident", "unconscious"], resources: ["Ambulance", "Medical Team"] },
+      { keywords: ["fire", "burning", "smoke", "blast"], resources: ["Fire Brigade", "Rescue Team"] },
+      { keywords: ["collapsed", "debris", "trapped", "buried"], resources: ["Search & Rescue", "Heavy Equipment"] },
+      { keywords: ["flood", "water", "drowned"], resources: ["Boat Team", "Flood Relief"] },
+      { keywords: ["no food", "hungry", "starving"], resources: ["Food Supply"] },
+      { keywords: ["electricity", "power", "outage"], resources: ["Electricity Dept."] },
+      { keywords: ["stuck", "stranded", "blocked"], resources: ["Evacuation Team", "Transport Unit"] }
+    ];
 
-      row.innerHTML = `
-        <td class="px-4 py-2">${index + 1}</td>
-        <td class="px-4 py-2">${date}</td>
-        <td class="px-4 py-2">Lat: ${sos.location[0].toFixed(2)}, Lng: ${sos.location[1].toFixed(2)}</td>
-        <td class="px-4 py-2">${sos.message}</td>
-        <td class="px-4 py-2"><span class="${priorityColor} text-white px-2 py-1 rounded text-xs">${sos.priority}</span></td>
-      `;
+    function getResources(message) {
+      const lower = message.toLowerCase();
+      const rec = new Set();
+      resourceMap.forEach(entry => {
+        if (entry.keywords.some(k => lower.includes(k))) {
+          entry.resources.forEach(r => rec.add(r));
+        }
+      });
+      return [...rec].join(", ") || "General Response Team";
+    }
 
-      reportBody.appendChild(row);
-    });
+    fetch('data/sos.json')
+      .then(res => res.json())
+      .then(data => {
+        data.forEach((sos, index) => {
+          const row = document.createElement('tr');
+          row.classList.add('hover:bg-gray-50');
+
+          const now = new Date().toLocaleString();
+          const colorClass = sos.priority === 'High' ? 'bg-red-600' : sos.priority === 'Medium' ? 'bg-orange-500' : 'bg-green-600';
+
+          const aiMsg = fakeAIResponses[Math.floor(Math.random() * fakeAIResponses.length)];
+          const resources = getResources(sos.message);
+
+          row.innerHTML = `
+            <td class="px-4 py-2">${index + 1}</td>
+            <td class="px-4 py-2">${now}</td>
+            <td class="px-4 py-2">Lat: ${sos.location[0].toFixed(2)}, Lng: ${sos.location[1].toFixed(2)}</td>
+            <td class="px-4 py-2">${sos.message}</td>
+            <td class="px-4 py-2"><span class="${colorClass} text-white px-2 py-1 rounded text-xs">${sos.priority}</span></td>
+            <td class="px-4 py-2 italic text-gray-700">🤖 ${aiMsg}</td>
+            <td class="px-4 py-2 text-gray-800">${resources}</td>
+          `;
+
+          reportBody.appendChild(row);
+        });
+      })
+      .catch(err => console.error('Failed to load reports:', err));
 
     function exportTableToCSV() {
       const rows = document.querySelectorAll("#reportTable tr");
