@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="title">ResQNet – Emergency Command Center</title>
+
+  <!-- TailwindCSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    .custom-div-icon div {
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.45);
+    }
+    #map {
+      height: 450px;
+      z-index: 0;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+  <!-- HEADER -->
+  <header class="flex justify-between items-center px-6 py-4 border-b">
+    <div class="flex items-center space-x-3">
+      <img src="resqnet.png" alt="Logo" class="h-10 w-10">
+      <span class="text-xl font-semibold" data-i18n="appName">ResQNet</span>
+    </div>
+    <nav class="hidden md:flex space-x-6 text-sm">
+      <a href="dashboard.html" data-i18n="navDashboard" class="hover:text-orange-600">Dashboard</a>
+      <a href="resource.html" data-i18n="navResources" class="hover:text-orange-600">Resources</a>
+      <a href="volunteers.html" data-i18n="navVolunteers" class="hover:text-orange-600">Volunteers</a>
+      <a href="reports.html" data-i18n="navReports" class="hover:text-orange-600">Reports</a>
+    </nav>
+    <div class="flex items-center gap-2">
+      <select id="languageSelect" class="text-sm border rounded px-2 py-1">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी</option>
+        <option value="bn">বাংলা</option>
+        <option value="gu">ગુજરાતી</option>
+        <option value="mr">मराठी</option>
+      </select>
+      <button class="bg-orange-600 text-white px-4 py-2 rounded text-sm hover:bg-orange-700" data-i18n="login">
+        <a href="login.html">Log In</a>
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="bg-orange-600 text-white py-6 text-center">
+    <h1 class="text-3xl font-bold mb-1" data-i18n="heroTitle">Emergency Command Center</h1>
+    <p class="text-sm" data-i18n="heroSub">Live disaster coordination system with situational awareness</p>
+    <div id="stats" class="flex justify-center gap-8 mt-4 text-sm">
+      <div>
+        <p class="font-semibold" data-i18n="statMissions">Active Missions</p>
+        <p id="missionCount" class="text-lg font-bold">—</p>
+      </div>
+      <div>
+        <p class="font-semibold" data-i18n="statResources">Resources Deployed</p>
+        <p class="text-lg font-bold">112</p>
+      </div>
+      <div>
+        <p class="font-semibold" data-i18n="statVolunteers">Volunteers Active</p>
+        <p class="text-lg font-bold">45</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN -->
+  <main class="px-6 py-10 max-w-7xl mx-auto">
+    <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+      <h2 class="text-xl font-semibold" data-i18n="sectionMap">Situational Awareness Map</h2>
+      <div class="flex flex-wrap items-center gap-3">
+        <button id="refreshBtn" class="text-sm border px-4 py-2 rounded hover:bg-gray-100" data-i18n="refresh">Refresh</button>
+        <button class="text-sm border px-4 py-2 rounded hover:bg-gray-100" data-i18n="comms">Comms</button>
+        <button id="newSosBtn" class="new-sos-btn bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded text-sm" data-i18n="newSOS">➕ New SOS</button>
+        <select id="filterSelect" class="text-sm border rounded px-3 py-2">
+          <option value="All" selected data-i18n="filterAll">All</option>
+          <option value="High" data-i18n="filterHigh">High Priority</option>
+          <option value="Medium" data-i18n="filterMedium">Medium Priority</option>
+          <option value="Low" data-i18n="filterLow">Low Priority</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- MAP -->
+    <div id="map" class="w-full rounded-lg shadow border"></div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t mt-10">
+    <div class="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-8 text-sm text-gray-600">
+      <div>
+        <h3 class="font-semibold mb-2" data-i18n="footerPlatform">Platform</h3>
+        <p data-i18n="footerMap">Live Map</p>
+        <p data-i18n="footerFlow">Resource Flow</p>
+        <p data-i18n="footerAlerts">Alerts</p>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2" data-i18n="footerOps">Operations</h3>
+        <p data-i18n="footerNeeds">Needs Assessment</p>
+        <p data-i18n="footerCoord">Mission Coordination</p>
+        <p data-i18n="footerReports">Reports</p>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2" data-i18n="footerSupport">Emergency Support</h3>
+        <p data-i18n="footerUnits">Local Units</p>
+        <p data-i18n="footerNGO">NGO Network</p>
+        <p data-i18n="footerTeam">Response Team</p>
+      </div>
+    </div>
+    <div class="px-6 py-4 text-xs text-center text-gray-400">
+      © 2025 ResQNet | <span data-i18n="status">Status</span>: <span class="text-green-600" data-i18n="statusOperational">Operational</span>
+    </div>
+  </footer>
+
+  <!-- ░░░ MODAL ░░░ -->
+  <div id="sosModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+      <h2 class="text-xl font-semibold mb-4">New SOS Request</h2>
+      <form id="sosForm" class="space-y-4">
+        <input id="sosName" required type="text" placeholder="Name" class="w-full border rounded p-2">
+        <textarea id="sosMessage" required placeholder="Describe the situation" class="w-full border rounded p-2"></textarea>
+        <input id="sosLat" required type="number" step="any" placeholder="Latitude" class="w-full border rounded p-2">
+        <input id="sosLng" required type="number" step="any" placeholder="Longitude" class="w-full border rounded p-2">
+        <input id="sosPriority" readonly placeholder="Priority will be auto-detected" class="w-full border rounded p-2 bg-gray-100 text-gray-700">
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeSOSModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+          <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="app.js"></script>
+</body>
+</html>

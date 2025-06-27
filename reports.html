@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ResQNet – Reports</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+
+  <!-- Header -->
+  <header class="flex justify-between items-center px-6 py-4 bg-white shadow">
+    <div class="flex items-center space-x-3">
+      <img src="resqnet.png" alt="Logo" class="h-10 w-10">
+      <span class="text-xl font-semibold text-orange-600">ResQNet</span>
+    </div>
+    <nav class="hidden md:flex space-x-6 text-sm">
+      <a href="index.html" class="hover:text-orange-600">Dashboard</a>
+      <a href="resources.html" class="hover:text-orange-600">Resources</a>
+      <a href="volunteers.html" class="hover:text-orange-600">Volunteers</a>
+      <a href="reports.html" class="text-orange-600 font-semibold">Reports</a>
+    </nav>
+    <button class="bg-orange-600 text-white px-4 py-2 rounded text-sm hover:bg-orange-700">Log In</button>
+  </header>
+
+  <!-- Title -->
+  <section class="bg-orange-600 text-white py-6 text-center">
+    <h1 class="text-3xl font-bold">Incident Reports</h1>
+    <p class="text-sm mt-1">Latest updates from the ground</p>
+  </section>
+
+  <!-- Main Content -->
+  <main class="px-6 py-8 max-w-6xl mx-auto bg-white rounded-lg shadow">
+    <div class="flex justify-end gap-4 mb-4">
+      <button onclick="exportTableToCSV()" class="text-sm bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Download CSV</button>
+      <button onclick="window.print()" class="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Print</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table id="reportTable" class="w-full table-auto text-sm">
+        <thead class="bg-gray-100 text-left">
+          <tr>
+            <th class="px-4 py-2">#</th>
+            <th class="px-4 py-2">Time</th>
+            <th class="px-4 py-2">Location</th>
+            <th class="px-4 py-2">Message</th>
+            <th class="px-4 py-2">Priority</th>
+          </tr>
+        </thead>
+        <tbody id="reportBody" class="divide-y">
+          <!-- Reports will be loaded via JS -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-sm text-center text-gray-400 py-6">
+    © 2025 ResQNet | Report status updated every 5 minutes
+  </footer>
+
+  <script>
+    const reportBody = document.getElementById('reportBody');
+
+    fetch('data/sos.json')
+      .then(res => res.json())
+      .then(data => {
+        data.forEach((sos, index) => {
+          const row = document.createElement('tr');
+          row.classList.add('hover:bg-gray-50');
+
+          const date = new Date().toISOString().slice(0, 16).replace('T', ' '); // dummy date
+          const priorityColor = sos.priority === 'High' ? 'bg-red-600' : sos.priority === 'Medium' ? 'bg-orange-500' : 'bg-green-600';
+
+          row.innerHTML = `
+            <td class="px-4 py-2">${index + 1}</td>
+            <td class="px-4 py-2">${date}</td>
+            <td class="px-4 py-2">Lat: ${sos.location[0].toFixed(2)}, Lng: ${sos.location[1].toFixed(2)}</td>
+            <td class="px-4 py-2">${sos.message}</td>
+            <td class="px-4 py-2"><span class="${priorityColor} text-white px-2 py-1 rounded text-xs">${sos.priority}</span></td>
+          `;
+
+          reportBody.appendChild(row);
+        });
+      })
+      .catch(err => console.error('Failed to load reports:', err));
+
+    function exportTableToCSV() {
+      const rows = document.querySelectorAll("#reportTable tr");
+      let csv = [];
+      rows.forEach(row => {
+        const cols = row.querySelectorAll("td, th");
+        const rowData = [...cols].map(col => col.innerText.replace(/,/g, ";"));
+        csv.push(rowData.join(","));
+      });
+
+      const blob = new Blob([csv.join("\n")], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.setAttribute("href", url);
+      a.setAttribute("download", "incident-reports.csv");
+      a.click();
+    }
+  </script>
+
+</body>
+</html>

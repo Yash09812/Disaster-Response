@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resources | ResQNet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .editable-cell {
+      outline: none;
+    }
+    .editable-cell:focus {
+      background-color: #fef9c3;
+    }
+  </style>
+</head>
+<script>
+  if (localStorage.getItem("isLoggedIn") !== "true") {
+    alert("🔒 Admin login required.");
+    window.location.href = "login.html";
+  }
+</script>
+
+<body class="bg-gray-50 text-gray-900">
+  <header class="flex justify-between items-center px-6 py-4 border-b">
+    <div class="flex items-center space-x-3">
+      <img src="resqnet.png" alt="Logo" class="h-10 w-10">
+      <span class="text-xl font-semibold">ResQNet</span>
+    </div>
+    <nav class="hidden md:flex space-x-6 text-sm">
+      <a href="index.html" class="hover:text-orange-600">Dashboard</a>
+      <a href="resource.html" class="hover:text-orange-600 font-semibold">Resources</a>
+      <a href="volunteers.html" class="hover:text-orange-600">Volunteers</a>
+      <a href="reports.html" class="hover:text-orange-600">Reports</a>
+    </nav>
+    <button class="bg-orange-600 text-white px-4 py-2 rounded text-sm hover:bg-orange-700">Log In</button>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-10">
+    <h1 class="text-2xl font-bold mb-6">Resource Management</h1>
+
+    <div class="overflow-x-auto bg-white shadow rounded-lg">
+      <table class="min-w-full text-sm">
+        <thead class="bg-orange-600 text-white">
+          <tr>
+            <th class="px-4 py-2 text-left">Name</th>
+            <th class="px-4 py-2 text-left">Type</th>
+            <th class="px-4 py-2 text-left">Location</th>
+            <th class="px-4 py-2 text-left">Status</th>
+            <th class="px-4 py-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="resourceTableBody">
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-6">
+      <button onclick="addNewResource()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">➕ Add Resource</button>
+    </div>
+  </main>
+
+  <footer class="bg-white border-t mt-10">
+    <div class="px-6 py-4 text-xs text-center text-gray-400">
+      © 2025 ResQNet | Status: <span class="text-green-600">Operational</span>
+    </div>
+  </footer>
+
+  <script>
+    let resources = [
+      { name: "Water Tanker", type: "Logistics", location: "Sector 12", status: "Active" },
+      { name: "Medical Kit", type: "Health", location: "Camp 3", status: "In Transit" },
+      { name: "Rescue Boat", type: "Evacuation", location: "River Side", status: "Deployed" }
+    ];
+
+    function renderTable() {
+      const tbody = document.getElementById("resourceTableBody");
+      tbody.innerHTML = "";
+
+      resources.forEach((resource, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td contenteditable="true" class="px-4 py-2 border editable-cell" oninput="updateResource(${index}, 'name', this.textContent)">${resource.name}</td>
+          <td contenteditable="true" class="px-4 py-2 border editable-cell" oninput="updateResource(${index}, 'type', this.textContent)">${resource.type}</td>
+          <td contenteditable="true" class="px-4 py-2 border editable-cell" oninput="updateResource(${index}, 'location', this.textContent)">${resource.location}</td>
+          <td contenteditable="true" class="px-4 py-2 border editable-cell" oninput="updateResource(${index}, 'status', this.textContent)">${resource.status}</td>
+          <td class="px-4 py-2 border">
+            <button onclick="deleteResource(${index})" class="text-red-600 hover:underline">Remove</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function updateResource(index, field, value) {
+      resources[index][field] = value;
+    }
+
+    function deleteResource(index) {
+      resources.splice(index, 1);
+      renderTable();
+    }
+
+    function addNewResource() {
+      resources.push({ name: "New Resource", type: "Type", location: "Location", status: "Pending" });
+      renderTable();
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>
