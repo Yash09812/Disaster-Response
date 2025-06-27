@@ -1,22 +1,30 @@
-// ✅ FIXED VERSION OF app.js
-
 /* ----------  AI PRIORITY DETECTION ---------- */
 function detectPriority(message) {
   const msg = message.toLowerCase();
-
   const highKeywords = ["fire", "bleeding", "collapse", "urgent", "injured", "unconscious", "accident"];
   const mediumKeywords = ["flood", "stuck", "water", "food", "stranded", "blocked"];
   const lowKeywords = ["electricity", "power", "transport", "slow", "internet", "mild"];
-
   if (highKeywords.some(word => msg.includes(word))) return "High";
   if (mediumKeywords.some(word => msg.includes(word))) return "Medium";
   if (lowKeywords.some(word => msg.includes(word))) return "Low";
   return "Medium"; // default fallback
 }
 
+/* ----------  LOCAL STORAGE HANDLING ---------- */
+function saveSOSLocally(sos) {
+  const stored = JSON.parse(localStorage.getItem("sosData")) || [];
+  stored.push(sos);
+  localStorage.setItem("sosData", JSON.stringify(stored));
+}
+
+function loadAllStoredSOS() {
+  const stored = JSON.parse(localStorage.getItem("sosData")) || [];
+  stored.forEach(addMarkerFromObject);
+}
+
 /* ----------  INITIALISE MAP ---------- */
 let map;
-let priorityChart; // Pie chart reference
+let priorityChart;
 const markers = [];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -26,8 +34,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }).addTo(map);
 
   loadInitialMarkers();
+  loadAllStoredSOS(); // 🚀 Load local storage markers
   hookUpUI();
-  setInterval(generateRandomSOS, 20000); // 💡 AUTO SOS
+  setInterval(generateRandomSOS, 20000);
 });
 
 /* ----------  LOAD JSON MARKERS ---------- */
@@ -64,17 +73,16 @@ const sosModal = document.getElementById("sosModal");
 const newSosBtn = document.getElementById("newSosBtn");
 const sosForm = document.getElementById("sosForm");
 
-newSosBtn.addEventListener("click", () => sosModal.classList.remove("hidden"));
+newSosBtn?.addEventListener("click", () => sosModal.classList.remove("hidden"));
 window.closeSOSModal = () => sosModal.classList.add("hidden");
 
-// Live Priority Detection
 const sosMessage = document.getElementById("sosMessage");
-sosMessage.addEventListener("input", (e) => {
+sosMessage?.addEventListener("input", (e) => {
   const priority = detectPriority(e.target.value);
   document.getElementById("sosPriority").value = priority;
 });
 
-sosForm.addEventListener("submit", (e) => {
+sosForm?.addEventListener("submit", (e) => {
   e.preventDefault();
 
   const name = document.getElementById("sosName").value.trim();
@@ -85,6 +93,7 @@ sosForm.addEventListener("submit", (e) => {
 
   const newSOS = { name, message, location: [lat, lng], priority };
   addMarkerFromObject(newSOS);
+  saveSOSLocally(newSOS); // ✅ Save to localStorage
   updateStats();
   updateChart();
   closeSOSModal();
@@ -93,21 +102,21 @@ sosForm.addEventListener("submit", (e) => {
 });
 
 /* ----------  FILTER ---------- */
-document.getElementById("refreshBtn").addEventListener("click", () => {
+document.getElementById("refreshBtn")?.addEventListener("click", () => {
   document.getElementById("filterSelect").value = "All";
   markers.forEach(m => m.addTo(map));
   updateStats();
   updateChart();
 });
 
-document.getElementById("filterSelect").addEventListener("change", () => {
+document.getElementById("filterSelect")?.addEventListener("change", () => {
   const value = document.getElementById("filterSelect").value;
   markers.forEach(m => map[value === "All" || m.meta.priority === value ? 'addLayer' : 'removeLayer'](m));
   updateStats();
   updateChart();
 });
 
-/* ----------  STATS & PIE CHART ---------- */
+/* ----------  STATS & CHART ---------- */
 function updateStats() {
   document.getElementById("missionCount").textContent = markers.filter(m => map.hasLayer(m)).length;
 }
@@ -155,12 +164,13 @@ function generateRandomSOS() {
   const lng = 77.2090 + (Math.random() - 0.5) * 0.1;
   const fakeSOS = { name, message, location: [lat, lng], priority };
   addMarkerFromObject(fakeSOS);
+  saveSOSLocally(fakeSOS); // ✅ Save random SOS as well
   updateStats();
   updateChart();
   showToast(`🚨 New SOS from ${name}`, priority);
 }
 
-/* ----------  TOAST NOTIFICATIONS ---------- */
+/* ----------  TOAST ---------- */
 function showToast(text, priority) {
   const toast = document.createElement("div");
   toast.textContent = text;
@@ -184,7 +194,7 @@ style.textContent = `
 }`;
 document.head.appendChild(style);
 
-/* ----------  UTILITY ---------- */
+/* ----------  HELPERS ---------- */
 function getColor(priority) {
   const p = priority.toLowerCase();
   if (p === "high") return "red";
@@ -193,9 +203,8 @@ function getColor(priority) {
   return "gray";
 }
 
-function hookUpUI() {
-  // Language selector and other dynamic UI features can go here
-}
+function hookUpUI() {}
+
 function getUserLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
