@@ -1,45 +1,74 @@
-/* ----------  AI PRIORITY DETECTION ---------- */
+
+function runAI(inputText) {
+  const fakeResponses = [
+    "This situation appears to be critical. Please deploy emergency services immediately.",
+    "It looks like the issue is of medium severity. Suggest monitoring and sending volunteers if needed.",
+    "This seems to be a low-priority case, but still keep an eye on it.",
+    "Urgent medical aid is required based on the message content.",
+    "Recommend contacting nearby resources for quick resolution.",
+    "This message indicates risk to human life – prioritize immediately."
+  ];
+  const index = Math.floor(Math.random() * fakeResponses.length);
+  return {
+    aiMessage: fakeResponses[index],
+    timestamp: new Date().toISOString(),
+  };
+}
+
+
 function detectPriority(message) {
   const msg = message.toLowerCase();
-  const highKeywords = ["fire", "bleeding", "collapse", "urgent", "injured", "unconscious", "accident"];
-  const mediumKeywords = ["flood", "stuck", "water", "food", "stranded", "blocked"];
-  const lowKeywords = ["electricity", "power", "transport", "slow", "internet", "mild"];
+
+  const highKeywords = ["fire", "burning", "explosion", "injured", "unconscious", "accident", "collapsed", "severe", "blood", "emergency", "critical"];
+  const mediumKeywords = ["stuck", "stranded", "flood", "water", "blocked", "trapped", "no food", "shortage", "rescued"];
+  const lowKeywords = ["power", "electricity", "internet", "transport", "mild", "waiting", "slow", "supply", "signal"];
+
   if (highKeywords.some(word => msg.includes(word))) return "High";
   if (mediumKeywords.some(word => msg.includes(word))) return "Medium";
   if (lowKeywords.some(word => msg.includes(word))) return "Low";
-  return "Medium"; // default fallback
+
+  return "Medium";
 }
 
-/* ----------  LOCAL STORAGE HANDLING ---------- */
-function saveSOSLocally(sos) {
-  const stored = JSON.parse(localStorage.getItem("sosData")) || [];
-  stored.push(sos);
-  localStorage.setItem("sosData", JSON.stringify(stored));
+function suggestResources(message) {
+  const lower = message.toLowerCase();
+
+  const mapping = [
+    { keywords: ["injury", "injured", "bleeding", "accident", "unconscious"], resources: ["Ambulance", "Medical Team"] },
+    { keywords: ["fire", "burning", "smoke", "blast"], resources: ["Fire Brigade", "Rescue Team"] },
+    { keywords: ["collapsed", "debris", "trapped", "buried"], resources: ["Search & Rescue", "Heavy Equipment"] },
+    { keywords: ["flood", "water", "drowned"], resources: ["Boat Team", "Flood Relief"] },
+    { keywords: ["no food", "hungry", "starving"], resources: ["Food Supply"] },
+    { keywords: ["electricity", "power", "outage"], resources: ["Electricity Dept."] },
+    { keywords: ["stuck", "stranded", "blocked"], resources: ["Evacuation Team", "Transport Unit"] }
+  ];
+
+  const recommendations = new Set();
+
+  mapping.forEach(entry => {
+    if (entry.keywords.some(k => lower.includes(k))) {
+      entry.resources.forEach(r => recommendations.add(r));
+    }
+  });
+
+  return [...recommendations].join(", ") || "General Response Team";
 }
 
-function loadAllStoredSOS() {
-  const stored = JSON.parse(localStorage.getItem("sosData")) || [];
-  stored.forEach(addMarkerFromObject);
-}
 
-/* ----------  INITIALISE MAP ---------- */
-let map;
-let priorityChart;
+let map, priorityChart;
 const markers = [];
 
 document.addEventListener("DOMContentLoaded", () => {
-  map = L.map("map").setView([28.6139, 77.2090], 10);
+  map = L.map("map").setView([22.9734, 78.6569], 5);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap contributors",
   }).addTo(map);
 
   loadInitialMarkers();
-  loadAllStoredSOS(); // 🚀 Load local storage markers
   hookUpUI();
-  setInterval(generateRandomSOS, 20000);
+  setInterval(generateRandomSOS, 45000);
 });
 
-/* ----------  LOAD JSON MARKERS ---------- */
 function loadInitialMarkers() {
   fetch("data/sos.json")
     .then(res => res.json())
@@ -60,29 +89,26 @@ function addMarkerFromObject(obj) {
     iconAnchor: [10, 10]
   });
 
+  const ai = runAI(obj.message);
+
   const marker = L.marker(obj.location, { icon })
     .addTo(map)
-    .bindPopup(`<b>${obj.name}</b><br>${obj.message}<br><span style="color:${color};font-weight:600">${obj.priority}</span>`);
+    .bindPopup(`<b>${obj.name}</b><br>${obj.message}<br><span style="color:${color};font-weight:600">${obj.priority}</span><br><i>🤖 AI: ${ai.aiMessage}</i>`);
 
   marker.meta = { priority: obj.priority };
   markers.push(marker);
 }
 
-/* ----------  SOS FORM HANDLING ---------- */
-const sosModal = document.getElementById("sosModal");
-const newSosBtn = document.getElementById("newSosBtn");
 const sosForm = document.getElementById("sosForm");
-
-newSosBtn?.addEventListener("click", () => sosModal.classList.remove("hidden"));
+document.getElementById("newSosBtn").addEventListener("click", () => sosModal.classList.remove("hidden"));
 window.closeSOSModal = () => sosModal.classList.add("hidden");
 
-const sosMessage = document.getElementById("sosMessage");
-sosMessage?.addEventListener("input", (e) => {
-  const priority = detectPriority(e.target.value);
-  document.getElementById("sosPriority").value = priority;
+document.getElementById("sosMessage").addEventListener("input", (e) => {
+  document.getElementById("sosPriority").value = detectPriority(e.target.value);
+  document.getElementById("sosRecommendation").value = suggestResources(e.target.value);
 });
 
-sosForm?.addEventListener("submit", (e) => {
+sosForm.addEventListener("submit", (e) => {
   e.preventDefault();
 
   const name = document.getElementById("sosName").value.trim();
@@ -93,7 +119,6 @@ sosForm?.addEventListener("submit", (e) => {
 
   const newSOS = { name, message, location: [lat, lng], priority };
   addMarkerFromObject(newSOS);
-  saveSOSLocally(newSOS); // ✅ Save to localStorage
   updateStats();
   updateChart();
   closeSOSModal();
@@ -101,22 +126,6 @@ sosForm?.addEventListener("submit", (e) => {
   showToast(`🚨 SOS added: ${name}`, priority);
 });
 
-/* ----------  FILTER ---------- */
-document.getElementById("refreshBtn")?.addEventListener("click", () => {
-  document.getElementById("filterSelect").value = "All";
-  markers.forEach(m => m.addTo(map));
-  updateStats();
-  updateChart();
-});
-
-document.getElementById("filterSelect")?.addEventListener("change", () => {
-  const value = document.getElementById("filterSelect").value;
-  markers.forEach(m => map[value === "All" || m.meta.priority === value ? 'addLayer' : 'removeLayer'](m));
-  updateStats();
-  updateChart();
-});
-
-/* ----------  STATS & CHART ---------- */
 function updateStats() {
   document.getElementById("missionCount").textContent = markers.filter(m => map.hasLayer(m)).length;
 }
@@ -126,6 +135,7 @@ function updateChart() {
   markers.forEach(marker => {
     if (map.hasLayer(marker)) counts[marker.meta.priority]++;
   });
+
   const data = {
     labels: ["High", "Medium", "Low"],
     datasets: [{
@@ -134,6 +144,7 @@ function updateChart() {
       hoverOffset: 10
     }]
   };
+
   if (priorityChart) {
     priorityChart.data = data;
     priorityChart.update();
@@ -143,7 +154,6 @@ function updateChart() {
   }
 }
 
-/* ----------  RANDOM SOS GENERATOR ---------- */
 const randomNames = ["Ravi", "Meena", "Amit", "Tara", "Faizan", "Neha", "Rahul", "Priya"];
 const randomMessages = [
   "Trapped under debris near market",
@@ -160,17 +170,16 @@ function generateRandomSOS() {
   const name = randomNames[Math.floor(Math.random() * randomNames.length)];
   const message = randomMessages[Math.floor(Math.random() * randomMessages.length)];
   const priority = detectPriority(message);
-  const lat = 28.6139 + (Math.random() - 0.5) * 0.1;
-  const lng = 77.2090 + (Math.random() - 0.5) * 0.1;
-  const fakeSOS = { name, message, location: [lat, lng], priority };
-  addMarkerFromObject(fakeSOS);
-  saveSOSLocally(fakeSOS); // ✅ Save random SOS as well
+  const lat = 8 + Math.random() * 23;
+  const lng = 68 + Math.random() * 30;
+
+  const sos = { name, message, location: [lat, lng], priority };
+  addMarkerFromObject(sos);
   updateStats();
   updateChart();
   showToast(`🚨 New SOS from ${name}`, priority);
 }
 
-/* ----------  TOAST ---------- */
 function showToast(text, priority) {
   const toast = document.createElement("div");
   toast.textContent = text;
@@ -194,7 +203,6 @@ style.textContent = `
 }`;
 document.head.appendChild(style);
 
-/* ----------  HELPERS ---------- */
 function getColor(priority) {
   const p = priority.toLowerCase();
   if (p === "high") return "red";
@@ -203,22 +211,36 @@ function getColor(priority) {
   return "gray";
 }
 
-function hookUpUI() {}
+function hookUpUI() {
+  document.getElementById("refreshBtn").addEventListener("click", () => {
+    document.getElementById("filterSelect").value = "All";
+    markers.forEach(m => m.addTo(map));
+    updateStats();
+    updateChart();
+  });
+
+  document.getElementById("filterSelect").addEventListener("change", () => {
+    const value = document.getElementById("filterSelect").value;
+    markers.forEach(m => map[value === "All" || m.meta.priority === value ? 'addLayer' : 'removeLayer'](m));
+    updateStats();
+    updateChart();
+  });
+}
 
 function getUserLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        document.getElementById("sosLat").value = position.coords.latitude.toFixed(6);
-        document.getElementById("sosLng").value = position.coords.longitude.toFixed(6);
-        alert("📍 Location detected and filled automatically!");
+      (pos) => {
+        document.getElementById("sosLat").value = pos.coords.latitude.toFixed(6);
+        document.getElementById("sosLng").value = pos.coords.longitude.toFixed(6);
+        alert("📍 Location auto-filled!");
       },
-      (error) => {
-        alert("❌ Unable to retrieve location. Please enter it manually.");
-        console.error(error);
+      (err) => {
+        alert("❌ Location access denied. Enter manually.");
+        console.error(err);
       }
     );
   } else {
-    alert("Geolocation is not supported by this browser.");
+    alert("Geolocation not supported.");
   }
 }
